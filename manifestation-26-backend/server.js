@@ -10,17 +10,27 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // --- PRODUCTION CORS SETUP ---
+
+// 1. Parse the Environment Variable into a clean list
+const envOrigins = process.env.FRONTEND_URL 
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim()) 
+  : [];
+
+// 2. Combine defaults (localhost) with your Env URLs
 const allowedOrigins = [
   "http://localhost:3000",                  // React Localhost
-  "http://localhost:5173",                  // Vite Localhost (just in case)
-  process.env.FRONTEND_URL,                 // Vercel Production URL
+  "http://localhost:5173",                  // Vite Localhost
+  ...envOrigins                             // Adds both Vercel & Custom Domain
 ];
+
+console.log("✅ Allowed Origins:", allowedOrigins); // Debug log to see what's allowed
 
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps, curl, or Postman)
     if (!origin) return callback(null, true);
     
+    // Check if the incoming origin is in our allowed list
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
