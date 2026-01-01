@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Check, Trash2, Sparkles, Layers, Heart, Brain, Briefcase, Wallet, Zap, LogOut } from 'lucide-react';
+import { 
+  Plus, Check, Trash2, Sparkles, Layers, Heart, Brain, Briefcase, 
+  Wallet, Zap, LogOut, Menu, X 
+} from 'lucide-react';
 import { useStore, Category, Affirmation } from './store';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -157,12 +160,12 @@ const AffirmationItem = ({ item }: { item: Affirmation }) => {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  // Destructure fetchAffirmations and user from store
   const { affirmations, activeCategory, setCategory, addAffirmation, fetchAffirmations, logout, user } = useStore();
   
   const [inputText, setInputText] = useState('');
   const [inputCategory, setInputCategory] = useState<Category>('Mindset');
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // New state for mobile menu
 
   // 1. Fetch Data on Mount & Check Auth
   useEffect(() => {
@@ -177,6 +180,11 @@ export default function Dashboard() {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleCategoryClick = (id: Category | 'All') => {
+    setCategory(id);
+    setIsSidebarOpen(false); // Close sidebar on mobile when category selected
   };
 
   const filteredAffirmations = activeCategory === 'All' 
@@ -204,66 +212,114 @@ export default function Dashboard() {
     <div className="min-h-screen font-sans text-white selection:bg-cosmic-accent selection:text-white flex flex-col md:flex-row">
       <AmbientBackground />
 
-      {/* Sidebar Navigation */}
-      <motion.aside 
-        initial={{ x: -50, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
-        className="w-full md:w-80 p-6 md:h-screen sticky top-0 z-20 md:border-r border-glass-border bg-glass-100/30 backdrop-blur-md flex flex-col"
+      {/* --- Mobile Header (Visible only on small screens) --- */}
+      <div className="md:hidden flex items-center justify-between p-6 sticky top-0 z-40 bg-cosmic-900/80 backdrop-blur-xl border-b border-glass-border">
+        <h1 className="text-xl font-light tracking-tight text-white/90 flex gap-2">
+          2026 <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-cosmic-cyan to-cosmic-accent">Manifest</span>
+        </h1>
+        <button 
+          onClick={() => setIsSidebarOpen(true)}
+          className="p-2 bg-glass-200 rounded-lg text-white active:scale-95 transition-transform"
+        >
+          <Menu size={24} />
+        </button>
+      </div>
+
+      {/* --- Mobile Sidebar Overlay --- */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* --- Sidebar Navigation (Drawer on Mobile, Sticky on Desktop) --- */}
+      <aside 
+        className={cn(
+          "fixed md:sticky top-0 h-screen w-[280px] md:w-80 p-6 z-50",
+          "bg-cosmic-900/95 md:bg-glass-100/30 backdrop-blur-2xl md:backdrop-blur-md",
+          "border-r border-glass-border shadow-2xl md:shadow-none",
+          "transition-transform duration-300 ease-in-out",
+          // Mobile transform logic:
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
       >
-        <div className="mb-10 pt-4 px-2">
-          <h1 className="text-3xl font-light tracking-tight text-white/90">
-            2026 <span className="block font-bold bg-clip-text text-transparent bg-gradient-to-r from-cosmic-cyan to-cosmic-accent">Manifest</span>
-          </h1>
-          <p className="text-sm text-gray-400 mt-2">
-            Welcome back, {user?.name?.split(' ')[0] || 'Architect'}.
-          </p>
+        <div className="flex flex-col h-full">
+          {/* Sidebar Header */}
+          <div className="mb-10 pt-4 px-2 flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-light tracking-tight text-white/90 hidden md:block">
+                2026 <span className="block font-bold bg-clip-text text-transparent bg-gradient-to-r from-cosmic-cyan to-cosmic-accent">Manifest</span>
+              </h1>
+              {/* Mobile Sidebar Title */}
+              <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cosmic-cyan to-cosmic-accent md:hidden">
+                Menu
+              </h1>
+              <p className="text-sm text-gray-400 mt-2">
+                Welcome back, {user?.name?.split(' ')[0] || 'Architect'}.
+              </p>
+            </div>
+            {/* Close Button (Mobile Only) */}
+            <button 
+              onClick={() => setIsSidebarOpen(false)}
+              className="md:hidden p-2 text-gray-400 hover:text-white"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="space-y-2 flex-1 overflow-y-auto custom-scrollbar">
+            {categories.map((cat) => (
+              <CategoryPill 
+                key={cat.id} 
+                label={cat.id} 
+                icon={cat.icon} 
+                active={activeCategory === cat.id} 
+                onClick={() => handleCategoryClick(cat.id)} 
+              />
+            ))}
+          </nav>
+
+          {/* Logout Button */}
+          <div className="pt-6 border-t border-glass-border mt-auto">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-300 hover:bg-red-500/10 hover:text-red-400 text-gray-400 group"
+            >
+              <LogOut size={18} className="group-hover:translate-x-1 transition-transform" />
+              <span className="font-medium tracking-wide text-sm">Disconnect</span>
+            </button>
+          </div>
         </div>
+      </aside>
 
-        <nav className="space-y-2 flex-1">
-          {categories.map((cat) => (
-            <CategoryPill 
-              key={cat.id} 
-              label={cat.id} 
-              icon={cat.icon} 
-              active={activeCategory === cat.id} 
-              onClick={() => setCategory(cat.id)} 
-            />
-          ))}
-        </nav>
-
-        {/* Logout Button */}
-        <div className="pt-6 border-t border-glass-border">
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-300 hover:bg-red-500/10 hover:text-red-400 text-gray-400 group"
-          >
-            <LogOut size={18} className="group-hover:translate-x-1 transition-transform" />
-            <span className="font-medium tracking-wide text-sm">Disconnect</span>
-          </button>
-        </div>
-      </motion.aside>
-
-      {/* Main Content Area */}
-      <main className="flex-1 relative z-10 min-h-screen overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-6 py-12 md:py-20">
+      {/* --- Main Content Area --- */}
+      <main className="flex-1 relative z-10 min-h-screen overflow-hidden">
+        <div className="max-w-4xl mx-auto px-6 py-8 md:py-20 overflow-y-auto h-full">
           
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-12"
+            className="mb-8 md:mb-12"
           >
-            <h2 className="text-4xl md:text-5xl font-thin tracking-tight mb-4">
+            <h2 className="text-3xl md:text-5xl font-thin tracking-tight mb-4">
               {activeCategory} <span className="text-gray-600">Timeline</span>
             </h2>
             <div className="h-1 w-20 bg-gradient-to-r from-cosmic-accent to-transparent rounded-full" />
           </motion.div>
 
+          {/* Input Section */}
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="mb-16 relative z-30"
+            className="mb-12 relative z-30"
           >
             <form onSubmit={handleAdd} className={cn(
               "relative rounded-2xl transition-all duration-500",
@@ -278,14 +334,14 @@ export default function Dashboard() {
                   onFocus={() => setIsInputFocused(true)}
                   onBlur={() => setIsInputFocused(false)}
                   placeholder="I am becoming..."
-                  className="w-full bg-transparent border-none text-xl p-4 text-white placeholder-white/20 focus:ring-0 outline-none font-light"
+                  className="w-full bg-transparent border-none text-lg md:text-xl p-4 text-white placeholder-white/20 focus:ring-0 outline-none font-light"
                 />
                 
-                <div className="flex items-center gap-2 w-full md:w-auto px-4 md:px-0">
+                <div className="flex items-center gap-2 w-full md:w-auto px-4 md:px-0 pb-2 md:pb-0">
                   <select 
                     value={inputCategory}
                     onChange={(e) => setInputCategory(e.target.value as Category)}
-                    className="bg-glass-200 text-sm border-none rounded-lg py-2 px-3 text-gray-300 focus:ring-0 cursor-pointer hover:bg-glass-300 transition-colors outline-none"
+                    className="flex-1 md:flex-none bg-glass-200 text-sm border-none rounded-lg py-3 px-3 text-gray-300 focus:ring-0 cursor-pointer hover:bg-glass-300 transition-colors outline-none"
                   >
                     {categories.filter(c => c.id !== 'All').map(c => (
                       <option key={c.id} value={c.id} className="bg-cosmic-900">{c.id}</option>
