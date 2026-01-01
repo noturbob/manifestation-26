@@ -4,7 +4,7 @@ import { create } from 'zustand';
 // Automatically switches between Localhost and Production (Render)
 const API_URL = process.env.NODE_ENV === 'development'
   ? 'http://localhost:5000/api'
-  : 'https://manifestation-26.onrender.com'; // <--- REPLACE THIS WITH YOUR ACTUAL RENDER URL LATER
+  : 'https://manifestation-26.onrender.com/api'; // <--- REPLACE THIS WITH YOUR ACTUAL RENDER URL LATER
 
 export type Category = 'Career' | 'Health' | 'Mindset' | 'Wealth' | 'Relationships' | 'Identity';
 
